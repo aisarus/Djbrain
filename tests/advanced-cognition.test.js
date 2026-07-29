@@ -11,7 +11,14 @@ test('records inspectable cognitive traces', () => {
   recordStage(trace, 'retrieval', { decision: 'episodic_memory', confidence: 0.8 }, { durationMs: 12 });
   finishTrace(trace, { metrics: { retrieved: 3 } });
   assert.deepEqual(summarizeTrace(trace), {
-    runId: 'run_1', status: 'succeeded', stageCount: 1, totalDurationMs: 12, warnings: [], errors: []
+    id: 'run_1',
+    runId: 'run_1',
+    status: 'succeeded',
+    stageCount: 1,
+    totalDurationMs: 12,
+    warnings: [],
+    errors: [],
+    metrics: { retrieved: 3 }
   });
 });
 
@@ -28,7 +35,7 @@ test('relationship updates preserve boundaries and evidence', () => {
 test('procedures become verified only after repeated successful outcomes', () => {
   const store = createProcedureStore([createProcedure({ id: 'proc_1', trigger: 'correct user feedback', contextTags: ['feedback'], steps: ['acknowledge','repair'] })]);
   for (let index = 0; index < 5; index += 1) recordProcedureOutcome(store, 'proc_1', { success: true, episodeId: `e${index}` });
-  const [{ procedure }] = retrieveProcedures(store, { trigger: 'correct user feedback', contextTags: ['feedback'] });
+  const [{ procedure }] = retrieveProcedures(store, { trigger: 'please correct the user feedback now', contextTags: ['feedback'] });
   assert.equal(procedure.status, 'verified');
   assert.ok(procedure.confidence >= 0.7);
 });
@@ -49,11 +56,13 @@ test('OpenAI-compatible adapter maps cognitive request and response', async () =
     model: 'test-model',
     fetchImpl: async (url, init) => {
       captured = { url, init };
-      return { ok: true, async json() { return { id: 'r1', model: 'test-model', choices: [{ message: { content: 'done' }, finish_reason: 'stop' }], usage: { total_tokens: 4 } }; } };
+      return { ok: true, async json() { return { id: 'r1', model: 'test-model', choices: [{ message: { content: 'done' }, finish_reason: 'stop' }], usage: { prompt_tokens: 2, completion_tokens: 2, total_tokens: 4 } }; } };
     }
   });
   const result = await provider.generate({ system: 'system', prompt: 'hello' });
+  assert.equal(result.provider, 'openai-compatible');
   assert.equal(result.text, 'done');
+  assert.equal(result.usage.totalTokens, 4);
   assert.match(captured.url, /chat\/completions$/);
   assert.equal(JSON.parse(captured.init.body).messages.length, 2);
 });
