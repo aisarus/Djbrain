@@ -75,6 +75,7 @@ function createCognitiveSystem(options) {
     semanticLogStore: stores.semantic,
     snapshotStore: stores.snapshots,
     semanticSeed: options.semanticSeed ?? [],
+    vectorScorer: options.vectorScorer ?? null,
     clock: options.clock
   });
   const responseRuntime = options.responseRuntime ?? new ResponseRuntime({
