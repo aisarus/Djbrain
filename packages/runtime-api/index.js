@@ -1,6 +1,7 @@
 export function createRuntimeApi(runtime, options = {}) {
   if (!runtime) throw new TypeError('runtime is required');
   const responseRuntime = options.responseRuntime ?? null;
+  const speechSimulationRuntime = options.speechSimulationRuntime ?? null;
   const traceStore = options.traceStore ?? null;
 
   return async function handle(request) {
@@ -9,6 +10,15 @@ export function createRuntimeApi(runtime, options = {}) {
     const body = request.body ?? {};
 
     try {
+      if (method === 'POST' && path === '/v1/speech/simulate') {
+        if (!speechSimulationRuntime) return response(503, { error: 'speech_simulation_runtime_not_configured' });
+        const result = await speechSimulationRuntime.simulate(body.message ?? body.event ?? body, {
+          participantIds: body.participantIds, relationshipMode: body.relationshipMode, channel: body.channel,
+          conversationWindow: body.conversationWindow, privacyContext: body.privacyContext,
+          memoryBudget: body.memoryBudget, mode: body.mode
+        });
+        return response(result.deliveryStatus === 'delivered' ? 200 : 422, result);
+      }
       if (method === 'POST' && path === '/v1/turns') {
         return response(200, await runtime.process(body));
       }
