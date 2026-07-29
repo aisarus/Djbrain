@@ -1,300 +1,591 @@
-# Djbrain Roadmap
+# Djbrain / Speech Twin Roadmap
 
-Djbrain is an experimental digital cognitive architecture. The project does not attempt to reproduce biological tissue neuron by neuron. It aims to reproduce selected functional mechanisms of human cognition: memory, identity, temporal continuity, situation interpretation, strategy selection, feedback learning, consolidation, forgetting and privacy-aware recall.
+## Mission
+
+Djbrain is an experimental architecture for reconstructing the **generative speech behavior of a specific person**.
 
 The first experimental subject is Arseniy Perel.
 
-## Product principle
+The system is not primarily a productivity agent, autonomous worker, generic assistant, quote search engine, or style-transfer prompt. Its central task is:
 
-The language model is not the whole mind. It is a replaceable language and reasoning runtime inside a larger, persistent, inspectable and plastic system.
+> Given a conversational situation, relationship context, current personal state and relevant autobiographical memory, generate the response that this person would most likely choose to say, in the way this person would most likely say it.
+
+The target is not only surface style. The system must reproduce the chain that produces speech:
 
 ```text
-input
-→ perception
-→ working state
-→ social context
-→ memory routing
-→ privacy filtering
-→ selected memory
-→ response strategy
-→ language runtime
-→ critic
-→ output
-→ feedback
-→ plasticity
-→ consolidation
+incoming message
+→ perceived situation
+→ relationship interpretation
+→ internal reaction hypothesis
+→ activated memory and identity patterns
+→ communicative intention
+→ content selection
+→ speech plan
+→ individual wording and rhythm
+→ speech-behavior critic
+→ utterance
 ```
 
-## Phase 0 — Container
+A useful answer that the person would never say is a failure. A stylistically similar answer with the wrong reaction, content or social stance is also a failure.
 
-Status: in progress.
+## Non-goals
 
-Current implementation:
+Djbrain is not optimized for:
 
-- responsive Vite application;
-- procedural interactive 3D brain;
-- touch and pointer rotation;
-- zoom controls;
-- clickable visual regions;
-- animated electrical impulses;
-- Vercel deployment.
+- maximizing task completion;
+- automatically taking actions in external systems;
+- producing the objectively best advice;
+- always being polite, balanced or helpful;
+- imitating only profanity, punctuation or catchphrases;
+- retrieving and remixing old quotations;
+- claiming biological or conscious equivalence to the original person.
 
-Next container work:
+Task execution may exist as a secondary capability only when task-oriented behavior is itself part of the person's speech pattern in the current situation.
 
-- separate `anatomy` and `architecture` views;
-- bind visual regions to machine-readable cognitive modules;
-- module activity and health indicators;
-- visible runtime route between modules;
-- timeline, memory and identity views;
-- replace the procedural brain with a high-quality segmented GLB model when licensing and asset quality are resolved.
+## Product principle
 
-Exit criterion: every visible region represents an actual module contract or is explicitly labelled as anatomical decoration.
+The language model is a replaceable language and reasoning engine inside a persistent, inspectable model of a person.
 
-## Phase 1 — Cognitive schema
+The system should answer six questions before generation:
 
-Status: started.
+1. What did this person notice in the message?
+2. How would this person interpret the social situation?
+3. What internal reaction would probably become active?
+4. What memories, beliefs, values and relationship patterns would influence the reply?
+5. What would this person try to accomplish communicatively?
+6. How would this person realize that intention in language?
+
+## Existing foundation to preserve
+
+The repository already contains useful lower-level infrastructure:
+
+- working memory;
+- episodic memory;
+- semantic memory;
+- temporal state;
+- relationship memory;
+- Identity Core claims;
+- procedural memory;
+- hybrid retrieval;
+- privacy filtering;
+- persistent event logs;
+- mutation replay;
+- provider-neutral generation interfaces;
+- observability traces;
+- benchmark harness;
+- ingestion and quarantine.
+
+These components should be retained where their contracts remain useful. They must be reoriented toward speech simulation rather than task execution.
+
+## Architecture v2
+
+```text
+Conversation input
+→ Situation Interpreter
+→ Relationship Context Resolver
+→ Internal State Model
+→ Memory and Identity Activation
+→ Communicative Intent Selector
+→ Content Planner
+→ Speech Planner
+→ Voice Realizer
+→ Speech Behavior Critic
+→ Final utterance
+→ Feedback and correction
+→ Reversible plasticity
+→ Consolidation
+```
+
+### Core distinction
+
+The old task-agent question was:
+
+> What action should the system perform?
+
+The new central question is:
+
+> What would this person most likely think worth saying here, and how would they say it?
+
+## Phase 0 — Scope migration
+
+Status: immediate priority.
 
 Deliverables:
 
-- versioned module definitions;
-- typed inputs and outputs;
-- runtime and learning routes;
-- memory access policy per module;
-- update speed for every module;
-- architecture validation tests;
-- mapping between anatomical anchors and digital functions.
+- replace task-agent language in architecture and documentation;
+- mark action-oriented strategy code as legacy or secondary;
+- define the new end-to-end speech simulation route;
+- map reusable packages to the new architecture;
+- create migration tests proving that existing memory and privacy behavior is preserved;
+- prevent the UI and documentation from describing the system as an autonomous worker.
 
-The initial contract lives in `src/data/cognitive-modules.js`.
+Exit criterion: all central project documents and runtime entry points describe speech-behavior simulation as the primary product.
 
-Exit criterion: the full path from input to response and from feedback to learning can be represented without hidden steps.
+## Phase 1 — Speech behavior schemas
 
-## Phase 2 — Memory substrate v1
+Create versioned contracts for the objects that explain why a person says something.
 
-Create a small, typed and inspectable memory system before processing the full archive.
+Required contracts:
 
-Required memory classes:
+### ConversationSituation
 
-- working memory;
-- interaction memory;
-- episodic memory;
-- semantic self-memory;
-- temporal state;
-- relationship memory;
-- procedural and behavioral rules;
-- Identity Core;
-- cold archive evidence.
+- participants;
+- relationship mode;
+- topic;
+- conversational history;
+- social stakes;
+- explicit request;
+- implied request;
+- conflict level;
+- ambiguity;
+- audience;
+- channel;
+- time context.
 
-Every durable record must support:
+### InternalStateHypothesis
 
-- stable ID;
-- provenance;
-- confidence;
-- sensitivity;
-- observed time;
-- validity interval;
-- status: pending, inferred or verified;
-- support and counter-evidence;
-- `supersedes`, `contradicts`, `supports` and `derived_from` links.
+- affective valence;
+- arousal;
+- irritation;
+- interest;
+- trust;
+- vulnerability;
+- certainty;
+- playfulness;
+- defensiveness;
+- cognitive mode;
+- confidence in the hypothesis;
+- supporting and counter-evidence.
 
-Start with 100–300 manually reviewable records. Do not import the full corpus yet.
+This object is a probabilistic model, not a medical diagnosis or claim of hidden access to the person's mind.
 
-Exit criterion: the system can answer temporal fact questions without confusing historical and current truth.
+### CommunicativeIntent
 
-## Phase 3 — Identity Core v1
+Possible intentions include:
 
-Build 50–100 verified behavioral patterns covering:
+- answer directly;
+- think aloud;
+- challenge;
+- correct;
+- provoke;
+- reassure;
+- seek validation;
+- create closeness;
+- distance;
+- entertain;
+- express irritation;
+- show uncertainty;
+- test the other person;
+- end the topic;
+- continue the interaction;
+- refuse;
+- avoid answering.
+
+### ContentPlan
+
+- claims to express;
+- memories to reference;
+- stance;
+- omissions;
+- uncertainty level;
+- emotional payload;
+- expected effect on the interlocutor.
+
+### SpeechPlan
+
+- language;
+- expected length;
+- sentence structure;
+- rhythm;
+- directness;
+- profanity level and function;
+- humor type;
+- hedging;
+- repetition;
+- self-correction;
+- punctuation habits;
+- code-switching;
+- opening and closing behavior.
+
+### UtteranceFeatures
+
+Measurable features extracted from real and generated speech:
+
+- token and character length;
+- sentence count;
+- average clause length;
+- punctuation distribution;
+- profanity density;
+- discourse markers;
+- parenthetical usage;
+- repetition;
+- questions;
+- imperatives;
+- code-switching;
+- slang;
+- emotional intensity;
+- lexical novelty;
+- response latency when available.
+
+### SpeechEvaluationCase
+
+- frozen conversational context;
+- hidden real continuation when available;
+- accepted alternative responses;
+- relationship context;
+- relevant and irrelevant memory candidates;
+- target internal-state range;
+- target communicative-intent range;
+- prohibited caricature markers;
+- evaluator notes.
+
+Exit criterion: the entire path from situation to utterance can be represented with explicit versioned objects and validated without hidden task-agent assumptions.
+
+## Phase 2 — Corpus reconstruction for speech
+
+The archive must be reconstructed as conversations, not as isolated messages.
+
+Pipeline:
+
+1. parse and normalize exports;
+2. restore speakers, threads and reply links;
+3. rebuild conversational windows;
+4. separate authored speech from quotations and forwarded content;
+5. identify channel and relationship context;
+6. deduplicate repeated exports;
+7. split long conversations into coherent interaction episodes;
+8. preserve pauses and timing where available;
+9. identify corrections, misunderstandings and repairs;
+10. quarantine messages without enough context;
+11. flag third-party privacy risks;
+12. retain raw evidence in a private cold archive.
+
+Do not create one memory per message. The useful unit is a conversational situation with antecedents, reaction and consequence.
+
+Exit criterion: a reviewer can inspect a reconstructed conversational episode and understand what prompted each response.
+
+## Phase 3 — Behavioral speech map v1
+
+Build a reviewable model of recurring speech behavior.
+
+Required dimensions:
 
 - directness;
-- humor;
+- preferred response length;
+- expansion versus compression;
+- humor and irony;
+- profanity and its communicative function;
 - disagreement;
 - irritation;
 - uncertainty;
 - emotional support;
+- persuasion;
+- self-disclosure;
+- meta-commentary;
+- topic switching;
+- response to misunderstanding;
+- response to praise;
+- response to pressure;
 - relationship-specific tone;
-- preferred response length;
-- recurring values;
-- known anti-patterns;
-- contexts in which a pattern does not apply.
+- language switching;
+- recurring openings, transitions and endings;
+- contexts in which each pattern does not apply.
 
-Each claim must contain evidence and counterexamples. A single observation must not become a stable trait.
+Each pattern must contain:
 
-Exit criterion: a strong model with Identity Core wins a blind recognizability comparison against the same model without personalization.
+- stable ID;
+- description;
+- applicable contexts;
+- exceptions;
+- supporting episode IDs;
+- counterexample IDs;
+- confidence;
+- stability;
+- review status;
+- sensitivity;
+- provenance.
 
-## Phase 4 — Runtime proof
+A single vivid message must never become a stable personality rule.
 
-Implement the smallest complete cognitive loop.
+Exit criterion: 50–100 reviewed patterns cover the major modes of the person's speech without reducing them to a caricature.
 
-Initial logical roles:
+## Phase 4 — Situation and internal reaction model
+
+Implement a probabilistic interpreter that predicts a range of plausible reactions rather than one hard label.
+
+The model must distinguish, where evidence supports it:
+
+- literal request versus social pressure;
+- sincere praise versus irony;
+- curiosity versus challenge;
+- irritation versus playfulness;
+- desire for information versus desire for validation;
+- close-relationship banter versus public communication;
+- analytical mode versus emotional mode;
+- genuine uncertainty versus rhetorical uncertainty.
+
+Output must include confidence and alternative hypotheses.
+
+Exit criterion: on a frozen labeled set, the correct situation and internal-state range is normally among the top hypotheses, and uncertainty rises on ambiguous inputs.
+
+## Phase 5 — Person-specific memory activation
+
+Adapt the existing memory substrate to answer:
+
+> What would this person naturally remember or treat as relevant in this situation?
+
+Retrieval must consider:
+
+- topic relevance;
+- relationship relevance;
+- emotional similarity;
+- conversational function;
+- current versus historical truth;
+- identity relevance;
+- salience;
+- recency;
+- repetition and retrieval fatigue;
+- privacy scope;
+- whether the person would realistically mention the memory aloud.
+
+Memory activation and memory disclosure are separate decisions. A memory may influence a response without being explicitly mentioned.
+
+Exit criterion: relevant memories improve continuation quality while irrelevant autobiographical facts and private third-party material remain absent.
+
+## Phase 6 — Speech Simulation Runtime v1
+
+Implement the smallest complete runtime focused on generated speech.
+
+Logical roles:
 
 1. Situation Interpreter
-2. Memory Controller
-3. Strategy Selector
-4. Critic
+2. Relationship Context Resolver
+3. Internal State Model
+4. Memory and Identity Controller
+5. Communicative Intent Selector
+6. Content Planner
+7. Speech Planner
+8. Voice Realizer
+9. Speech Behavior Critic
 
-These roles may initially be separate structured calls to one strong model. A multi-agent deployment is not required.
+These may initially be structured calls to one strong frozen model. Multi-agent deployment is not required.
 
-Compare:
+The runtime should produce both:
 
-- strong model only;
-- strong model plus Identity Core;
-- strong model plus Identity Core and structured memory;
-- complete runtime with strategy and critic.
+- the final utterance;
+- an inspectable trace of the inferred situation, activated memories, internal-state hypothesis, communicative intention and speech plan.
 
-Exit criterion: the complete runtime improves recognizability or factual continuity without reducing conversational relevance or privacy.
+The trace is diagnostic. It is not necessarily shown to the end user.
 
-## Phase 5 — Arseniy Benchmark v1
+Exit criterion: the runtime generates contextually plausible person-specific speech and can explain its own selected evidence without exposing private chain-of-thought.
 
-Create 50 frozen, manually reviewed scenarios across:
+## Phase 7 — Arseniy Speech Benchmark v1
 
-- small talk;
-- direct questions;
-- humor;
+Create a frozen benchmark with at least 60 manually reviewed scenarios.
+
+Required scenario groups:
+
+- ordinary small talk;
+- direct factual questions;
+- absurd or playful prompts;
 - irritation;
 - disagreement;
 - correction;
-- topic switching;
-- autobiographical facts;
+- praise;
+- emotional support;
+- requests for advice;
+- pressure and urgency;
+- relationship-sensitive communication;
+- public versus private tone;
+- autobiographical continuity;
 - current versus outdated facts;
-- relationship-sensitive tone;
 - unknown information;
 - memory-not-needed cases;
 - tempting but irrelevant memories;
 - recovery after misunderstanding;
-- repeated-question robustness;
-- project continuity.
+- repeated questions;
+- topic switching;
+- vulnerable disclosure;
+- refusal and boundary setting;
+- code-switching;
+- held-out real dialogue continuation;
+- novel situations with no direct archive analogue.
 
-Metrics:
+Evaluation dimensions:
 
-- conversational relevance;
-- recognizability;
+- content similarity;
+- communicative-intent similarity;
+- relationship appropriateness;
+- emotional-state plausibility;
+- stylistic recognizability;
 - factual support;
 - temporal correctness;
 - coherence;
-- repetition;
+- natural variation;
 - over-personalization;
+- caricature score;
 - unnecessary memory use;
 - privacy leakage;
-- uncertainty calibration.
+- uncertainty calibration;
+- human blind recognizability.
 
-Exit criterion: results can be reproduced from a frozen benchmark and compared blindly.
+Required comparisons:
 
-## Phase 6 — Plasticity v1
+- strong model only;
+- strong model plus style prompt;
+- strong model plus behavioral speech map;
+- behavioral map plus memory;
+- complete Speech Simulation Runtime.
+
+Exit criterion: evaluators identify the person-specific system above chance and prefer it to style-prompt and memory-only baselines without increased privacy leakage.
+
+## Phase 8 — Plasticity from correction
 
 After each evaluated interaction, preserve:
 
-- interpreted situation;
-- selected memories;
-- chosen strategy;
-- generated response;
+- conversational situation;
+- inferred internal state;
+- selected memory;
+- selected communicative intention;
+- content plan;
+- speech plan;
+- generated utterance;
 - critic report;
 - user rating;
-- corrected ideal response;
-- proposed reason for failure.
+- corrected or preferred response;
+- proposed reason for mismatch.
 
 The plasticity controller may:
 
-- change retrieval priority;
-- add an exception;
-- weaken a behavioral rule;
+- change activation priority;
+- add a context exception;
+- weaken a speech pattern;
 - propose a new pattern;
 - update a temporal fact;
+- update relationship-specific behavior;
+- adjust intent selection;
 - create a pending consolidation proposal.
 
-It may not silently rewrite verified Identity Core.
+It may not silently rewrite verified Identity Core or verified speech patterns.
 
-Exit criterion: after 20–30 corrections, the system performs better on unseen related scenarios without changing the base model weights.
+Exit criterion: after 20–30 corrections, performance improves on unseen related situations without base-model weight changes.
 
-## Phase 7 — Consolidation and sleep
+## Phase 9 — Consolidation and forgetting
 
-Create scheduled consolidation that:
+Scheduled consolidation should:
 
-- groups related episodes;
-- searches for repeated patterns;
-- searches for counterexamples;
-- resolves temporal changes;
-- proposes semantic facts;
-- proposes Identity Core updates;
-- decays unsupported hypotheses;
-- detects dominant memories that are retrieved too often.
+- group related interaction episodes;
+- find repeated situation-to-response mappings;
+- search for counterexamples;
+- distinguish stable speech patterns from temporary state;
+- resolve temporal changes;
+- propose relationship-specific patterns;
+- decay unsupported hypotheses;
+- detect overused memories and catchphrases;
+- detect caricature drift;
+- preserve provenance and reviewability.
 
-All important changes retain provenance and remain reviewable.
+Exit criterion: the system becomes more selective and accurate over time instead of merely accumulating rules.
 
-Exit criterion: memory quality improves over time instead of only increasing in volume.
+## Phase 10 — Full corpus reconstruction
 
-## Phase 8 — Corpus reconstruction
+Only after the small runtime demonstrates measurable value should the full archive be processed.
 
-Only after the small architecture demonstrates value, process the full archive.
+Operational memory must remain compact and inspectable. Raw messages remain private evidence, not the runtime personality itself.
 
-Pipeline:
+Exit criterion: the complete archive can support reconstruction without forcing the model to load or embed everything for every response.
 
-1. parse and normalize;
-2. restore dialogue and episode boundaries;
-3. deduplicate;
-4. quarantine malformed and low-context content;
-5. identify third-party privacy risks;
-6. extract candidate events and facts;
-7. identify temporal updates and contradictions;
-8. identify behavioral candidates;
-9. review high-value objects;
-10. retain raw evidence in cold archive.
-
-The goal is not one memory per message. The goal is a smaller, structured life model backed by evidence.
-
-Exit criterion: operational memory remains compact enough to inspect and evaluate while the complete archive remains available for provenance.
-
-## Phase 9 — Fine-tuning
+## Phase 11 — Optional fine-tuning
 
 Fine-tuning is optional and comes only after the architecture works with a strong frozen model.
 
-Future examples should include:
+Training examples should include:
 
-- complete conversational situation;
-- relationship mode;
-- temporal state;
-- selected relevant memory;
-- conversational strategy;
-- accepted response;
-- rejected response;
+- conversational situation;
+- relationship context;
+- internal-state hypothesis;
+- selected memory;
+- communicative intention;
+- content plan;
+- speech plan;
+- accepted utterance;
+- rejected utterance;
 - reason for rejection.
 
-Training should optimize memory use and conversational behavior, not memorize the raw archive.
+Training should optimize situation-to-speech behavior, not memorize the raw archive.
 
 ## Immediate implementation order
 
-### Sprint 1 — Brain Map
+### Sprint A — Architecture migration
 
-- [x] define initial cognitive modules;
-- [x] define runtime and learning routes;
-- [ ] render architecture modules in the live interface;
-- [ ] show module status, inputs, outputs and memory access;
-- [ ] animate a deterministic runtime route;
-- [ ] add architecture/anatomy view switch;
-- [ ] add basic schema validation.
+- [ ] replace task-agent framing in runtime contracts;
+- [ ] introduce `SituationFrame`, `InternalStateHypothesis`, `CommunicativeIntent`, `ContentPlan`, `SpeechPlan` and `UtteranceFeatures`;
+- [ ] add a new `SpeechSimulationRuntime` entry point;
+- [ ] keep the old action-oriented runtime behind a clearly named legacy or secondary interface;
+- [ ] update diagrams and module registry;
+- [ ] preserve memory, privacy and persistence tests.
 
-### Sprint 2 — Memory Seed
+### Sprint B — Deterministic vertical slice
 
-- [ ] define schemas for episodes, facts, states and behavioral patterns;
-- [ ] implement local fixture storage;
-- [ ] create 100 synthetic or manually verified seed records;
-- [ ] display records through the 3D interface;
-- [ ] add temporal and contradiction resolution tests.
+- [ ] implement deterministic situation interpretation;
+- [ ] implement internal-state hypothesis generation;
+- [ ] implement communicative-intent selection;
+- [ ] implement content and speech planning;
+- [ ] implement deterministic voice realization;
+- [ ] implement a speech-behavior critic;
+- [ ] expose one end-to-end API route;
+- [ ] persist traces.
 
-### Sprint 3 — Runtime Proof
+### Sprint C — Speech benchmark
 
-- [ ] add provider-neutral model interface;
-- [ ] implement interpreter contract;
-- [ ] implement memory router contract;
-- [ ] implement strategy contract;
-- [ ] implement critic contract;
-- [ ] create 30–50 frozen scenarios;
-- [ ] run blind baseline comparison.
+- [ ] migrate the existing frozen scenarios away from task-agent assertions;
+- [ ] create at least 60 speech-behavior cases;
+- [ ] add category metrics;
+- [ ] add held-out continuation fixtures;
+- [ ] add caricature and unnecessary-memory checks;
+- [ ] establish baseline results.
+
+### Sprint D — Reviewed seed
+
+- [ ] create 100–300 manually reviewable records;
+- [ ] include situations, episodes, temporal facts, relationships and speech patterns;
+- [ ] include counterexamples and non-applicability contexts;
+- [ ] load through the ingestion gate;
+- [ ] keep raw private content outside Git.
+
+### Sprint E — Strong-model runtime proof
+
+- [ ] connect a strong provider through the provider-neutral adapter;
+- [ ] compare baseline, style prompt, behavioral map, memory and complete runtime;
+- [ ] run blind human evaluation;
+- [ ] publish reproducible benchmark summaries without private raw data.
+
+## Definition of v1 success
+
+Speech Twin v1 is successful only if all of the following are true:
+
+- it produces person-specific reactions, not merely person-like wording;
+- content and stance are recognizable in blind comparison;
+- relationship context changes the response appropriately;
+- current and historical facts are not confused;
+- irrelevant personal memories are usually absent;
+- private third-party information does not leak;
+- the person is not reduced to profanity, irony or a few catchphrases;
+- corrections produce measurable improvement;
+- the system remains inspectable and reversible;
+- results are reproducible on a frozen benchmark.
 
 ## Non-negotiable constraints
 
 - no raw private archive in Git;
 - no silent external upload;
 - no paid full-corpus operation without explicit approval;
-- no new fine-tuning before runtime proof;
-- all inferred identity claims remain distinguishable from verified claims;
+- no fine-tuning before runtime proof;
+- no claim of consciousness or biological equivalence;
+- inferred internal states remain hypotheses with confidence, not facts;
+- inferred identity and speech claims remain distinguishable from verified claims;
 - every important memory mutation keeps provenance;
-- the visual interface must not pretend mock activity is real runtime activity.
+- relationship memory requires explicit scope;
+- the system must not expose private diagnostic traces as chain-of-thought;
+- the visual interface must not present mock activity as real cognition;
+- task efficiency must never silently replace speech-behavior fidelity as the main optimization target.
