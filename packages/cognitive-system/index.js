@@ -8,6 +8,7 @@ import { createRelationshipRegistry } from '../relationship-model/index.js';
 import { createProcedureStore } from '../procedural-memory/index.js';
 import { createRuntimeApi } from '../runtime-api/index.js';
 import { DeterministicLanguageProvider } from '../language-provider/index.js';
+import { SpeechSimulationRuntime } from '../speech-simulation-runtime/index.js';
 
 export class CognitiveSystem {
   constructor({ memoryRuntime, responseRuntime, api, stores, identityCore, relationshipRegistry, procedureStore }) {
@@ -63,6 +64,18 @@ export function createInMemoryCognitiveSystem(options = {}) {
       traces: options.traceStore ?? new MemoryStore(options.traceSeed ?? [])
     }
   });
+}
+
+// Speech Twin is the primary public constructor. The older response runtime stays available
+// for compatibility with action-oriented experiments.
+export function createInMemorySpeechTwinSystem(options = {}) { return createSpeechTwinSystem({ ...options, persistent: false }); }
+export function createLocalSpeechTwinSystem(options = {}) { return createSpeechTwinSystem({ ...options, persistent: true }); }
+function createSpeechTwinSystem(options) {
+  const system = options.persistent ? createLocalCognitiveSystem(options) : createInMemoryCognitiveSystem(options);
+  system.speechSimulationRuntime = new SpeechSimulationRuntime({ memoryRuntime: system.memoryRuntime, traceSink: system.stores.traces, clock: options.clock, provider: options.speechProvider });
+  system.simulateSpeech = (input, runOptions = {}) => system.speechSimulationRuntime.simulate(input, runOptions);
+  system.api = createRuntimeApi(system.memoryRuntime, { responseRuntime: system.responseRuntime, speechSimulationRuntime: system.speechSimulationRuntime, traceStore: system.stores.traces });
+  return system;
 }
 
 function createCognitiveSystem(options) {

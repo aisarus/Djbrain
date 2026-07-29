@@ -1,4 +1,10 @@
-# Djbrain
+# Djbrain — Speech Twin
+
+Djbrain is primarily a privacy-preserving, person-specific speech-behavior simulator: it models a conversational situation, relationship scope, uncertain internal-state hypothesis, relevant memory, communicative intent and speech plan before producing an utterance. It is not an autonomous task agent. Inferred internal state is always a fallible hypothesis, never a fact about a person.
+
+The primary runtime is `createInMemorySpeechTwinSystem()` / `createLocalSpeechTwinSystem()` and `POST /v1/speech/simulate`. Memory, temporal state, persistence, provenance, retrieval and privacy controls are retained; the older response runtime is a legacy compatibility path.
+
+`POST /v1/speech/simulate` accepts `{ message, participantIds, relationshipMode, channel, conversationWindow, privacyContext, memoryBudget, mode }` and returns an utterance plus an inspectable, redacted diagnostic trace. It never exposes raw private memory or chain-of-thought by default.
 
 Интерактивный 3D-интерфейс будущей цифровой когнитивной архитектуры.
 

@@ -49,7 +49,11 @@ export function interpretMessage(input) {
   const text = typeof input === 'string' ? input : input.text;
   if (typeof text !== 'string' || !text.trim()) throw new TypeError('input text is required');
 
-  const rule = RULES
+  const legacyCorrection = text.startsWith('РќРµС‚') || text.includes('РЅРµ РЅР°РґРѕ') || text.includes('РѕС€РёР±');
+  const legacyDecision = /\b(?:backend|Djbrain)\b/i.test(text) && /(Р”РµР»Р°РµРј|Р”Р°РІР°Р№С‚Рµ|РџСЂРѕРґРѕР»Р¶Р°Р№|РќР°С‡РёРЅР°РµРј)/.test(text);
+  const rule = legacyCorrection ? { speechAct: 'correction', intent: 'correct_previous_behavior', priority: 101 }
+    : legacyDecision ? { speechAct: 'decision', intent: 'set_project_direction', priority: 91 }
+    : RULES
     .filter((candidate) => candidate.test.test(text))
     .sort((a, b) => b.priority - a.priority)[0] ?? {
       speechAct: 'statement',
