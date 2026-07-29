@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { interpretMessage } from '../packages/perception/index.js';
 import { createWorkingMemory, updateWorkingMemory, validateWorkingMemory } from '../packages/working-memory/index.js';
 import { validateCognitiveEvent } from '../packages/contracts/cognitive-event.js';
+import { buildSituationModel, validateSituationModel } from '../packages/situation-model/index.js';
+import { routeMemory, validateMemoryDecision } from '../packages/memory-router/index.js';
 
 test('interprets a project direction decision', () => {
   const event = interpretMessage({
@@ -44,6 +46,7 @@ test('turns explicit correction into a working-memory constraint', () => {
 
   assert.equal(event.speechAct, 'correction');
   assert.match(next.constraints[0], /^avoid:/);
+  assert.equal(event.metadata.negated, true);
 });
 
 test('bounds recent events instead of growing forever', () => {
@@ -57,4 +60,81 @@ test('bounds recent events instead of growing forever', () => {
     state = updateWorkingMemory(state, event, { eventLimit: 3 });
   }
   assert.equal(state.recentEvents.length, 3);
+});
+
+test('detects mixed language and ambiguity cues', () => {
+  const event = interpretMessage({
+    id: 'evt_mixed',
+    timestamp: '2026-07-29T11:54:00+03:00',
+    text: 'Ну да конечно, давай build backend прямо сейчас.'
+  });
+
+  assert.equal(event.language, 'mixed');
+  assert.equal(event.metadata.literalness, 'uncertain');
+  assert.ok(event.metadata.ambiguityFlags.includes('possible_irony'));
+  assert.ok(event.confidence < 0.82);
+});
+
+test('builds a situation model from current event and working memory', () => {
+  let state = createWorkingMemory();
+  const event = interpretMessage({
+    id: 'evt_situation',
+    timestamp: '2026-07-29T11:55:00+03:00',
+    text: 'Делаем бэкенд мозга функция за функцией.'
+  });
+  state = updateWorkingMemory(state, event);
+  const situation = buildSituationModel(event, state);
+
+  assert.equal(situation.currentGoal, 'build_functional_digital_brain');
+  assert.equal(situation.expectedResponse, 'acknowledge_and_execute');
+  assert.equal(situation.mainRisk, 'produce_architecture_without_executable_behavior');
+  assert.equal(validateSituationModel(situation).valid, true);
+});
+
+test('routes project turns to only relevant memory layers', () => {
+  let state = createWorkingMemory();
+  const event = interpretMessage({
+    id: 'evt_route_project',
+    timestamp: '2026-07-29T11:56:00+03:00',
+    text: 'Продолжай собирать backend Djbrain.'
+  });
+  state = updateWorkingMemory(state, event);
+  const situation = buildSituationModel(event, state);
+  const decision = routeMemory(event, situation, state);
+
+  assert.equal(decision.memoryNeeded, true);
+  assert.equal(decision.category, 'project');
+  assert.deepEqual(decision.selectedLayers, ['working_memory', 'temporal_state', 'recent_decisions']);
+  assert.ok(decision.excludedLayers.includes('health'));
+  assert.equal(validateMemoryDecision(decision).valid, true);
+});
+
+test('does not retrieve long-term memory for a context-free trivial question', () => {
+  const state = createWorkingMemory();
+  const event = interpretMessage({
+    id: 'evt_route_none',
+    timestamp: '2026-07-29T11:57:00+03:00',
+    text: 'Сколько будет два плюс два?'
+  });
+  const situation = buildSituationModel(event, state);
+  const decision = routeMemory(event, situation, state);
+
+  assert.equal(decision.memoryNeeded, false);
+  assert.deepEqual(decision.selectedLayers, []);
+  assert.equal(decision.budget, 0);
+});
+
+test('routes corrections through feedback and recent events', () => {
+  let state = createWorkingMemory({ currentGoal: 'build_functional_digital_brain' });
+  const event = interpretMessage({
+    id: 'evt_route_correction',
+    timestamp: '2026-07-29T11:58:00+03:00',
+    text: 'Нет, ты опять ушёл в лишний визуал.'
+  });
+  state = updateWorkingMemory(state, event);
+  const situation = buildSituationModel(event, state);
+  const decision = routeMemory(event, situation, state);
+
+  assert.equal(decision.category, 'correction');
+  assert.deepEqual(decision.selectedLayers, ['working_memory', 'feedback', 'recent_events']);
 });
