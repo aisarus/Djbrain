@@ -1,0 +1,33 @@
+{
+  "id": "codex-speech-twin-v2",
+  "repository": "aisarus/Djbrain",
+  "branch": "codex/speech-twin-v1",
+  "pullRequest": 2,
+  "authoritativeSpec": "docs/CODEX_SPEECH_TWIN_V2_MISSION.md",
+  "status": "blocked_changes_required",
+  "objective": "Replace the deterministic Speech Twin mock with a tested, persistent, person-specific speech-behavior simulator whose behavior changes measurably with relationship, dialogue history, identity, temporal state and relevant memory.",
+  "requiredCommands": [
+    "npm install",
+    "npm test",
+    "npm run build",
+    "npm run benchmark:speech",
+    "npm run benchmark:compare",
+    "npm run export:blind-review"
+  ],
+  "hardGates": {
+    "testFailures": 0,
+    "buildMustPass": true,
+    "minimumManuallyAuthoredScenarios": 120,
+    "minimumMultiTurnScenarios": 25,
+    "minimumPairedContrastScenarios": 20,
+    "minimumCriticRepairClasses": 6,
+    "baselineComparisonRequired": true,
+    "persistentRestartCoverageRequired": true,
+    "privacyCriticalRegressionsAllowed": 0,
+    "generatedScenarioLoopsForbidden": true,
+    "fixedPrefixRealizerForbidden": true,
+    "topicLookupInternalStateForbidden": true,
+    "preExistingFailuresAccepted": false
+  },
+  "completionMessageRule": "Do not report completion until every Definition of Done item in the authoritative specification passes, or a genuinely external blocker is documented with exact reproduction steps."
+}
