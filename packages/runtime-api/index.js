@@ -40,6 +40,17 @@ export function createRuntimeApi(runtime, options = {}) {
         const result = await runtime.addSemanticFact(body.fact, body.policy);
         return response(result.action === 'conflict_pending' ? 409 : 201, result);
       }
+      if (method === 'POST' && path === '/v1/temporal-states') {
+        const result = await runtime.addTemporalState(body.record ?? body);
+        return response(result.conflicts?.length ? 409 : 201, result);
+      }
+      if (method === 'GET' && path === '/v1/temporal-states/current') {
+        const query = request.query ?? {};
+        if (!query.subject || !query.stateType) return response(400, { error: 'subject_and_stateType_required' });
+        return response(200, {
+          record: runtime.resolveTemporalState(query.subject, query.stateType, query.at)
+        });
+      }
       if (method === 'GET' && path === '/v1/traces') {
         if (!traceStore) return response(503, { error: 'trace_store_not_configured' });
         const { records, errors } = await traceStore.readAll();
