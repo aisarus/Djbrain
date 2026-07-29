@@ -1,4 +1,13 @@
-export async function hybridRetrieve({ query, memories, vectorScorer = null, limit = 5, now = new Date().toISOString(), diversityKey = defaultDiversityKey } = {}) {
+export async function hybridRetrieve({
+  query,
+  memories,
+  vectorScorer = null,
+  limit = 5,
+  now = new Date().toISOString(),
+  diversityKey = defaultDiversityKey,
+  minRelevance = 0.05,
+  allowFallback = false
+} = {}) {
   if (!query || typeof query.text !== 'string') throw new TypeError('query.text is required');
   const terms = tokenize([query.text, ...(query.entities ?? []), ...(query.topics ?? [])].join(' '));
   const vectorScores = vectorScorer ? await vectorScorer.score(query, memories) : new Map();
@@ -7,19 +16,23 @@ export async function hybridRetrieve({ query, memories, vectorScorer = null, lim
     const text = searchableText(memory);
     const lexical = bm25Lite(terms, tokenize(text));
     const vector = normalizeVectorScore(vectorScores instanceof Map ? vectorScores.get(memory.id) : vectorScores?.[memory.id]);
+    const explicitEntity = overlap(query.entities ?? [], memory.entities ?? []);
+    const explicitTopic = overlap(query.topics ?? [], memory.topics ?? []);
+    const relevance = Math.max(lexical, vector, explicitEntity, explicitTopic);
     const recency = recencyScore(memory, now);
     const confidence = memory.confidence ?? 0.5;
     const importance = memory.importance ?? 0.5;
     const current = memory.status === 'current' || memory.current === true ? 1 : 0;
     const contradictionPenalty = memory.status === 'contradicted' || memory.status === 'superseded' ? 0.35 : 0;
-    const score = lexical * 0.38 + vector * 0.32 + recency * 0.08 + confidence * 0.09 + importance * 0.08 + current * 0.05 - contradictionPenalty;
+    const support = confidence * 0.1 + importance * 0.08 + recency * 0.07 + current * 0.05;
+    const score = relevance * 0.7 + support * relevance - contradictionPenalty;
     return {
       id: memory.id,
       memory,
       score: Number(Math.max(0, score).toFixed(4)),
-      components: { lexical, vector, recency, confidence, importance, current, contradictionPenalty }
+      components: { lexical, vector, explicitEntity, explicitTopic, relevance, recency, confidence, importance, current, contradictionPenalty }
     };
-  }).filter((item) => item.score > 0)
+  }).filter((item) => allowFallback ? item.score > 0 : item.components.relevance >= minRelevance && item.score > 0)
     .sort((a, b) => b.score - a.score);
 
   return diversify(ranked, limit, diversityKey);
@@ -73,7 +86,19 @@ function bm25Lite(queryTerms, documentTerms) {
 }
 
 function searchableText(memory) {
-  return [memory.summary, memory.subject, memory.predicate, stringify(memory.value), memory.stateType, ...(memory.entities ?? []), ...(memory.topics ?? [])].filter(Boolean).join(' ');
+  return [
+    memory.summary,
+    memory.claim,
+    memory.trigger,
+    memory.displayName,
+    memory.subject,
+    memory.predicate,
+    stringify(memory.value),
+    memory.stateType,
+    ...(memory.entities ?? []),
+    ...(memory.topics ?? []),
+    ...(memory.contextTags ?? [])
+  ].filter(Boolean).join(' ');
 }
 
 function tokenize(text) {
@@ -112,6 +137,12 @@ function recencyScore(memory, now) {
 function normalizeVectorScore(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) return 0;
   return Math.max(0, Math.min(1, value));
+}
+
+function overlap(requested, values) {
+  if (!requested.length || !values.length) return 0;
+  const normalized = new Set(values.map((item) => String(item).toLowerCase()));
+  return requested.filter((item) => normalized.has(String(item).toLowerCase())).length / requested.length;
 }
 
 function diversify(ranked, limit, keyFn) {
