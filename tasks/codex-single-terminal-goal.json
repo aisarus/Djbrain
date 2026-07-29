@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "codex_terminal_goal/v1",
+  "id": "speech-twin-pr2-until-merge-ready",
+  "repository": "aisarus/Djbrain",
+  "branch": "codex/speech-twin-v1",
+  "pullRequest": 2,
+  "mode": "single_terminal_goal",
+  "goal": "Make PR #2 a genuinely merge-ready Speech Twin implementation by satisfying every requirement in docs/CODEX_SPEECH_TWIN_V2_MISSION.md, with zero test failures, a successful clean build, an honest non-generated benchmark, measurable improvement over the generic baseline, complete persistence and restart coverage, and zero critical privacy regressions.",
+  "authoritativeInputs": [
+    "docs/CODEX_SPEECH_TWIN_V2_MISSION.md",
+    "tasks/codex-speech-twin-v2.json",
+    "docs/ROADMAP.md"
+  ],
+  "terminalCondition": {
+    "operator": "AND",
+    "conditions": [
+      { "id": "dependencies_install", "command": "npm install", "mustExitWith": 0 },
+      { "id": "all_tests_green", "command": "npm test", "mustExitWith": 0, "maximumFailures": 0 },
+      { "id": "build_green", "command": "npm run build", "mustExitWith": 0 },
+      { "id": "speech_benchmark_green", "command": "npm run benchmark:speech", "mustExitWith": 0 },
+      { "id": "baseline_comparison_green", "command": "npm run benchmark:compare", "mustExitWith": 0 },
+      { "id": "blind_review_export_green", "command": "npm run export:blind-review", "mustExitWith": 0 },
+      { "id": "manual_scenarios", "minimum": 120, "generatedLoopsForbidden": true },
+      { "id": "multi_turn_scenarios", "minimum": 25 },
+      { "id": "paired_contrast_scenarios", "minimum": 20 },
+      { "id": "critic_repair_classes", "minimum": 6 },
+      { "id": "complete_system_beats_generic_baseline", "required": true },
+      { "id": "identity_relationship_temporal_memory_affect_output", "required": true },
+      { "id": "persistent_restart_coverage", "required": true },
+      { "id": "critical_privacy_regressions", "maximum": 0 },
+      { "id": "critical_temporal_regressions", "maximum": 0 },
+      { "id": "fixed_prefix_or_complete_template_realizer", "allowed": false },
+      { "id": "topic_lookup_internal_state_model", "allowed": false },
+      { "id": "unresolved_quality_gate_failures_in_pr", "maximum": 0 }
+    ]
+  },
+  "executionLoop": {
+    "pseudoCode": "while (!terminalConditionSatisfied) { inspectCurrentState(); selectHighestImpactFailingGate(); implementRealFix(); addOrUpdateRegressionTests(); runAffectedTests(); runFullRequiredCommandSetWhenStable(); commitCheckpoint(); continue; }",
+    "priorityOrder": [
+      "repository installation and build reproducibility",
+      "all legacy test failures",
+      "all new test failures",
+      "real multi-turn interpretation",
+      "evidence-backed behavioral profile",
+      "actual memory, identity, relationship and temporal activation",
+      "grounded communicative intent and content planning",
+      "compositional speech realization",
+      "critic and targeted repair",
+      "120-case honest benchmark",
+      "generic baseline comparison",
+      "persistence, restart and ingestion",
+      "blind A/B export",
+      "final full verification"
+    ],
+    "afterAnyFailure": [
+      "Do not stop.",
+      "Read the exact failure output.",
+      "Identify the root cause rather than weakening the test.",
+      "Implement the fix.",
+      "Add a regression test when applicable.",
+      "Rerun the failing command.",
+      "Continue to the next failing gate."
+    ],
+    "checkpointPolicy": {
+      "allowed": true,
+      "purpose": "preserve work only",
+      "mayDeclareCompletion": false,
+      "requiredFields": [
+        "commit SHA",
+        "fixed gates",
+        "remaining failing gates",
+        "next exact command"
+      ]
+    }
+  },
+  "forbiddenStopReasons": [
+    "a module or phase was implemented",
+    "many files or lines were changed",
+    "a checkpoint commit was created",
+    "new Speech Twin tests pass while legacy tests fail",
+    "the implementation is mostly complete",
+    "the benchmark passes its own critic",
+    "dependencies are missing",
+    "Vite is not installed",
+    "failures existed before this branch",
+    "a progress report was produced",
+    "the task appears large",
+    "some quality gates are still red"
+  ],
+  "allowedNonCompletionStop": {
+    "onlyWhen": "A genuinely external, non-code blocker or an enforced tool/runtime hard limit makes further execution impossible.",
+    "requiredBehavior": [
+      "commit all coherent work",
+      "do not claim completion",
+      "emit status HARD_LIMIT_CHECKPOINT or EXTERNAL_BLOCKER",
+      "include exact blocker evidence",
+      "include the last command and its complete result summary",
+      "include the next exact command to execute immediately when resumed"
+    ]
+  },
+  "completionOutput": {
+    "statusMustEqual": "TERMINAL_GOAL_SATISFIED",
+    "requiredEvidence": [
+      "final branch head SHA",
+      "exact output summaries for every required command",
+      "zero-failure test count",
+      "successful build result",
+      "scenario uniqueness audit",
+      "multi-turn and paired-contrast counts",
+      "per-category benchmark metrics",
+      "generic versus reduced versus complete comparison",
+      "persistence and restart test evidence",
+      "privacy and temporal regression summary",
+      "generated benchmark artifact path",
+      "blind review packet path",
+      "remaining known limitations"
+    ]
+  },
+  "instruction": "Begin immediately. Do not answer with a plan. Do not announce completion at intermediate checkpoints. Continue the execution loop until terminalCondition is fully satisfied."
+}
