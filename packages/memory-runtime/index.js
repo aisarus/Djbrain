@@ -2,8 +2,8 @@ import { createWorkingMemory, updateWorkingMemory } from '../working-memory/inde
 import { interpretMessage } from '../perception/index.js';
 import { buildSituationModel } from '../situation-model/index.js';
 import { routeMemory } from '../memory-router/index.js';
-import { assessSalience } from '../salience/index.js';
-import { createEpisodeStore, writeEpisode, retrieveEpisodes } from '../episodic-memory/index.js';
+import { scoreSalience } from '../salience/index.js';
+import { createEpisodeStore, writeEventToEpisodeStore, retrieveEpisodes } from '../episodic-memory/index.js';
 
 export class MemoryRuntime {
   constructor({ eventStore, snapshotStore = null, clock = () => new Date().toISOString() } = {}) {
@@ -37,8 +37,8 @@ export class MemoryRuntime {
     const previous = structuredClone(this.workingMemory);
     const nextWorkingMemory = updateWorkingMemory(previous, event);
     const situation = buildSituationModel(event, nextWorkingMemory);
-    const memoryDecision = routeMemory(event, nextWorkingMemory, situation);
-    const salience = assessSalience(event, { workingMemory: nextWorkingMemory, situation });
+    const memoryDecision = routeMemory(event, situation, nextWorkingMemory);
+    const salience = scoreSalience(event, { activeEntities: previous.activeEntities });
 
     const envelope = {
       id: `log_${event.id}`,
@@ -58,7 +58,7 @@ export class MemoryRuntime {
     await this.#writeSnapshot();
 
     const retrievedEpisodes = memoryDecision.memoryNeeded
-      ? retrieveEpisodes(this.episodeStore, { entities: event.entities, limit: memoryDecision.budget || 5 })
+      ? retrieveEpisodes(this.episodeStore, { entities: event.entities, limit: memoryDecision.budget || 5, now: event.timestamp })
       : [];
 
     return {
@@ -76,6 +76,7 @@ export class MemoryRuntime {
     return {
       schemaVersion: '1.0.0',
       workingMemory: structuredClone(this.workingMemory),
+      episodes: structuredClone(this.episodeStore.episodes),
       episodeCount: this.episodeStore.episodes.length,
       eventCount: this.seenEventIds.size
     };
@@ -84,15 +85,20 @@ export class MemoryRuntime {
   #replay(envelope) {
     if (!envelope?.event?.id || this.seenEventIds.has(envelope.event.id)) return;
     this.workingMemory = envelope.workingMemoryAfter ?? updateWorkingMemory(this.workingMemory, envelope.event);
-    const score = envelope.salience ?? assessSalience(envelope.event, { workingMemory: this.workingMemory, situation: envelope.situation });
-    if (score.shouldWrite) writeEpisode(this.episodeStore, envelope.event, score, { situation: envelope.situation });
+    const result = writeEventToEpisodeStore(
+      this.episodeStore,
+      envelope.event,
+      { activeEntities: this.workingMemory.activeEntities },
+      { force: envelope.salience?.shouldWrite === true }
+    );
+    this.episodeStore = result.store;
     this.seenEventIds.add(envelope.event.id);
   }
 
   async #writeSnapshot() {
     if (!this.snapshotStore) return;
     await this.snapshotStore.append({
-      id: 'runtime_state',
+      id: `runtime_state_${this.workingMemory.version}`,
       schemaVersion: '1.0.0',
       timestamp: this.clock(),
       state: this.getState()
