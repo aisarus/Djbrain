@@ -8,7 +8,7 @@ export function buildSituationModel(event, workingMemory) {
   const mainRisk = inferMainRisk(event, workingMemory);
 
   return {
-    schemaVersion: '1.0.0',
+    schemaVersion: '1.1.0',
     eventId: event.id,
     timestamp: event.timestamp,
     userGoal,
@@ -25,7 +25,7 @@ export function buildSituationModel(event, workingMemory) {
 
 export function validateSituationModel(model) {
   const errors = [];
-  if (model?.schemaVersion !== '1.0.0') errors.push('invalid_schema_version');
+  if (!['1.0.0','1.1.0'].includes(model?.schemaVersion)) errors.push('invalid_schema_version');
   for (const key of ['eventId', 'timestamp', 'userGoal', 'systemRole', 'currentStage', 'expectedResponse']) {
     if (!model?.[key]) errors.push(`missing_${key}`);
   }
@@ -53,6 +53,7 @@ function inferUserGoal(event, currentGoal) {
   if (event.intent === 'request_action') return 'obtain_concrete_action';
   if (event.intent === 'correct_previous_behavior') return 'repair_system_behavior';
   if (event.intent === 'ask_information') return 'obtain_information';
+  if (event.intent === 'evaluate_previous_output') return 'improve_system_behavior';
   return 'continue_current_context';
 }
 
@@ -60,14 +61,22 @@ function inferExpectedResponse(event) {
   if (event.intent === 'set_project_direction') return 'acknowledge_and_execute';
   if (event.intent === 'request_action') return 'perform_requested_action';
   if (event.intent === 'correct_previous_behavior') return 'acknowledge_and_repair';
+  if (event.intent === 'evaluate_previous_output') return 'integrate_feedback';
   if (event.intent === 'ask_information') return 'direct_answer';
   return 'contextual_response';
 }
 
 function inferMainRisk(event, memory) {
-  if (event.entities.includes('visual') && /не надо|лишн/i.test(event.text)) return 'continue_deprioritized_visual_work';
-  if (event.entities.includes('backend') && memory.currentGoal === 'build_functional_digital_brain') return 'produce_architecture_without_executable_behavior';
+  const text = event.text.toLowerCase();
+  if (event.entities.includes('visual') && /(не надо|лишн|замораж|отлож|не трог|раньше.*backend|backend.*раньше)/i.test(text)) {
+    return 'continue_deprioritized_visual_work';
+  }
   if (event.intent === 'correct_previous_behavior') return 'repeat_corrected_behavior';
+  if (event.entities.includes('backend') && memory.currentGoal === 'build_functional_digital_brain') {
+    if (/(до рабочего результата|не останавливай|до талого|пока не сдела)/i.test(text)) return 'stop_before_vertical_slice_is_complete';
+    return 'produce_architecture_without_executable_behavior';
+  }
+  if (event.intent === 'evaluate_previous_output') return 'ignore_feedback_signal';
   return 'misread_current_intent';
 }
 
@@ -75,5 +84,6 @@ function calculateUncertainty(event, memory) {
   let uncertainty = 1 - event.confidence;
   if (!memory.currentGoal) uncertainty += 0.12;
   if (event.entities.length === 0) uncertainty += 0.08;
+  if (event.metadata?.literalness === 'uncertain') uncertainty += 0.12;
   return Math.max(0.02, Math.min(0.95, Number(uncertainty.toFixed(2))));
 }
