@@ -1,22 +1,47 @@
 import { createCognitiveEvent } from '../contracts/cognitive-event.js';
 
 const RULES = [
-  { speechAct: 'correction', intent: 'correct_previous_behavior', priority: 100, test: /\b(нет|не так|ошиб|исправ|я имел в виду|не надо|перестань|хватит)\b/i },
-  { speechAct: 'decision', intent: 'set_project_direction', priority: 90, test: /\b(решил|делаем|начинаем|приступаем|замораживаем|надо делать|давай выполнять|переходим|фокусируемся)\b/i },
-  { speechAct: 'request', intent: 'request_action', priority: 80, test: /\b(сделай|дай|построй|добавь|запусти|проверь|продолжай|ебаш|давай)\b/i },
-  { speechAct: 'question', intent: 'ask_information', priority: 70, test: /\?|\b(что|как|почему|можем|можно ли|зачем|когда|где)\b/i },
-  { speechAct: 'feedback', intent: 'evaluate_previous_output', priority: 60, test: /\b(хорошо|плохо|норм|отлично|прикольно|неплохо|ужасно)\b/i }
+  {
+    speechAct: 'correction',
+    intent: 'correct_previous_behavior',
+    priority: 100,
+    test: /\b(нет|не так|ошиб\p{L}*|исправ\p{L}*|я имел в виду|не надо|перестань|хватит|не останавливайся|не повторяй|не делай снова)\b/iu
+  },
+  {
+    speechAct: 'decision',
+    intent: 'set_project_direction',
+    priority: 90,
+    test: /\b(решил\p{L}*|делаем|начинаем|приступаем|замораживаем|надо делать|давай выполнять|переходим|фокусируемся)\b/iu
+  },
+  {
+    speechAct: 'request',
+    intent: 'request_action',
+    priority: 80,
+    test: /\b(сделай|дай|построй|строй|добавь|запусти|проверь|продолжай|ебашь|ебашить|используй|покажи|расскажи|обсуди|угадай|давай)\b/iu
+  },
+  {
+    speechAct: 'question',
+    intent: 'ask_information',
+    priority: 70,
+    test: /\?|\b(что|как|почему|можем|можно ли|зачем|когда|где|кто|какой|какая|какие|сколько)\b/iu
+  },
+  {
+    speechAct: 'feedback',
+    intent: 'evaluate_previous_output',
+    priority: 60,
+    test: /\b(хорошо|плохо|норм|отлично|прикольно|неплохо|ужасно|полезнее|лучше|хуже)\b/iu
+  }
 ];
 
 const ENTITY_PATTERNS = [
   ['Djbrain', /\b(djbrain|цифровой мозг|мозг)\b/i],
   ['Codex', /\b(кодекс|codex)\b/i],
   ['backend', /\b(бэкенд|backend|runtime|сервер)\b/i],
-  ['visual', /\b(визуал|интерфейс|3d|three\.js)\b/i],
-  ['data_pipeline', /\b(данн|корпус|архив|dataset|pipeline|разметк)\b/i],
+  ['visual', /\b(визуал|интерфейс|3d|three\.js|сайт)\b/i],
+  ['data_pipeline', /\b(данн\p{L}*|корпус|архив|dataset|pipeline|разметк\p{L}*|json)\b/iu],
   ['working_memory', /\b(рабочая память|working memory)\b/i],
-  ['episodic_memory', /\b(эпизодическ|episodic memory)\b/i],
-  ['identity_core', /\b(identity core|ядро идентичности|личностн.*ядр)\b/i],
+  ['episodic_memory', /\b(эпизодическ\p{L}*|episodic memory)\b/iu],
+  ['identity_core', /\b(identity core|ядро идентичности|личностн\p{L}*\s+ядр\p{L}*)\b/iu],
   ['memory_router', /\b(memory router|маршрутизатор памяти|retrieval)\b/i]
 ];
 
@@ -76,7 +101,7 @@ function detectLanguage(text) {
 }
 
 function detectTone(text) {
-  if (/!{2,}|\b(нахуя|бляд|хули|ебан|тупорыл|ебаш)\b/i.test(text)) return 'intense_direct';
+  if (/!{2,}|\b(нахуя|бляд\p{L}*|хули|ебан\p{L}*|тупорыл\p{L}*|ебаш\p{L}*)\b/iu.test(text)) return 'intense_direct';
   if (/\b(отлично|прикольно|круто|супер)\b/i.test(text)) return 'positive';
   if (/\b(пожалуйста|будь добр|можешь ли)\b/i.test(text)) return 'polite';
   return 'direct';
