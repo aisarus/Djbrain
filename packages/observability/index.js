@@ -1,6 +1,8 @@
 export function createTrace(runId, timestamp = new Date().toISOString()) {
+  if (!runId) throw new TypeError('runId is required');
   return {
-    schemaVersion: '1.0.0',
+    id: runId,
+    schemaVersion: '1.1.0',
     runId,
     startedAt: timestamp,
     finishedAt: null,
@@ -17,21 +19,22 @@ export function recordStage(trace, stage, payload = {}, timing = {}) {
     stage,
     startedAt: timing.startedAt ?? new Date().toISOString(),
     finishedAt: timing.finishedAt ?? new Date().toISOString(),
-    durationMs: Number(timing.durationMs ?? 0),
-    inputRefs: payload.inputRefs ?? [],
-    outputRefs: payload.outputRefs ?? [],
+    durationMs: Math.max(0, Number(timing.durationMs ?? 0)),
+    inputRefs: unique(payload.inputRefs ?? []),
+    outputRefs: unique(payload.outputRefs ?? []),
     decision: payload.decision ?? null,
     confidence: payload.confidence ?? null,
     reason: payload.reason ?? null,
-    warnings: payload.warnings ?? []
+    warnings: unique(payload.warnings ?? [])
   };
   trace.stages.push(entry);
   return entry;
 }
 
-export function finishTrace(trace, { status = 'succeeded', metrics = {}, errors = [] } = {}) {
+export function finishTrace(trace, { status = 'succeeded', metrics = {}, errors = [], finishedAt = new Date().toISOString() } = {}) {
+  if (!trace || trace.status !== 'running') throw new TypeError('active trace is required');
   trace.status = status;
-  trace.finishedAt = new Date().toISOString();
+  trace.finishedAt = finishedAt;
   trace.metrics = { ...trace.metrics, ...metrics };
   trace.errors.push(...errors);
   return trace;
@@ -39,11 +42,15 @@ export function finishTrace(trace, { status = 'succeeded', metrics = {}, errors 
 
 export function summarizeTrace(trace) {
   return {
+    id: trace.id,
     runId: trace.runId,
     status: trace.status,
     stageCount: trace.stages.length,
     totalDurationMs: trace.stages.reduce((sum, stage) => sum + stage.durationMs, 0),
-    warnings: trace.stages.flatMap((stage) => stage.warnings),
-    errors: [...trace.errors]
+    warnings: unique(trace.stages.flatMap((stage) => stage.warnings)),
+    errors: [...trace.errors],
+    metrics: { ...trace.metrics }
   };
 }
+
+function unique(values) { return [...new Set(values.filter(Boolean))]; }
