@@ -1,0 +1,149 @@
+{
+  "taskVersion": "1.0.0",
+  "id": "codex-speech-twin-v1",
+  "title": "Migrate Djbrain from task-agent framing to person-specific speech behavior simulation",
+  "repository": "aisarus/Djbrain",
+  "authoritativeDocs": [
+    "docs/ROADMAP.md",
+    "docs/CODEX_SPEECH_TWIN_V1_MISSION.md"
+  ],
+  "recommendedBranch": "codex/speech-twin-v1",
+  "primaryGoal": "Implement one complete deterministic vertical slice that predicts what a specific person would most likely choose to say in a conversational situation and how they would say it.",
+  "nonGoals": [
+    "autonomous task execution",
+    "generic assistant optimization",
+    "full private corpus ingestion",
+    "fine-tuning",
+    "pure catchphrase or profanity imitation",
+    "raw quote retrieval",
+    "visual redesign"
+  ],
+  "preserve": [
+    "working memory",
+    "episodic memory",
+    "semantic memory",
+    "temporal state",
+    "relationship memory",
+    "Identity Core",
+    "hybrid retrieval",
+    "privacy filtering",
+    "persistence and replay",
+    "provider-neutral adapters",
+    "observability",
+    "ingestion quarantine",
+    "benchmark harness"
+  ],
+  "deliverables": [
+    {
+      "id": "contracts",
+      "paths": ["packages/contracts/"],
+      "requiredObjects": [
+        "ConversationSituation",
+        "InternalStateHypothesis",
+        "CommunicativeIntent",
+        "ContentPlan",
+        "SpeechPlan",
+        "UtteranceFeatures"
+      ],
+      "acceptance": [
+        "versioned constructors or normalizers exist",
+        "validators exist",
+        "valid and invalid object tests exist"
+      ]
+    },
+    {
+      "id": "modules",
+      "paths": [
+        "packages/situation-interpreter/",
+        "packages/internal-state-model/",
+        "packages/communicative-intent/",
+        "packages/content-planner/",
+        "packages/speech-planner/",
+        "packages/voice-realizer/",
+        "packages/speech-behavior-critic/"
+      ],
+      "acceptance": [
+        "deterministic implementations exist",
+        "ambiguous inputs produce higher uncertainty",
+        "profanity and style are context-dependent",
+        "memory influence is separate from memory disclosure"
+      ]
+    },
+    {
+      "id": "runtime",
+      "paths": ["packages/speech-simulation-runtime/"],
+      "acceptance": [
+        "full situation-to-utterance path works",
+        "privacy filtering precedes generation",
+        "relationship scope is explicit",
+        "structured trace is returned",
+        "critic and repair path exist",
+        "deterministic and provider-neutral modes exist"
+      ]
+    },
+    {
+      "id": "system-integration",
+      "paths": ["packages/cognitive-system/", "packages/runtime-api/"],
+      "acceptance": [
+        "createInMemorySpeechTwinSystem exists",
+        "createLocalSpeechTwinSystem exists",
+        "POST /v1/speech/simulate exists",
+        "legacy action-oriented runtime is secondary and clearly named"
+      ]
+    },
+    {
+      "id": "benchmark",
+      "paths": ["tests/fixtures/arseniy-speech-benchmark-v1.js"],
+      "minimumCases": 60,
+      "acceptance": [
+        "category metrics exist",
+        "structured behavior is asserted",
+        "caricature and unnecessary-memory checks exist",
+        "ordinary dialogue does not emit project-management language"
+      ]
+    },
+    {
+      "id": "documentation",
+      "paths": ["README.md", "docs/"],
+      "acceptance": [
+        "speech behavior simulation is the primary product description",
+        "inferred internal states are described as hypotheses",
+        "privacy and limitations are documented"
+      ]
+    }
+  ],
+  "qualityGates": [
+    "npm test passes",
+    "npm run build passes",
+    "semantic restart recovery passes",
+    "temporal supersession passes",
+    "relationship memory does not activate without explicit scope",
+    "irrelevant high-confidence memory does not surface",
+    "ordinary dialogue does not default to task-agent behavior",
+    "a single observation cannot rewrite verified identity",
+    "speech critic catches caricature and unsupported autobiographical claims"
+  ],
+  "executionPolicy": {
+    "stopAfterScaffolding": false,
+    "continueUntil": [
+      "all deliverables and quality gates pass",
+      "a concrete external blocker is reached",
+      "an unresolvable product decision is encountered"
+    ],
+    "finalReport": [
+      "changed files",
+      "test results",
+      "benchmark summary",
+      "remaining risks",
+      "exact blockers"
+    ]
+  },
+  "privacyConstraints": [
+    "no raw private archive in Git",
+    "no silent external upload",
+    "no API keys in Git",
+    "no paid API calls in tests",
+    "every durable mutation keeps provenance",
+    "private diagnostic traces are not exposed as chain-of-thought"
+  ]
+}
