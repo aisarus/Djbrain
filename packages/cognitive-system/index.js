@@ -20,14 +20,12 @@ export class CognitiveSystem {
     this.procedureStore = procedureStore;
   }
 
-  async init() {
-    await this.responseRuntime.init();
-    return this;
-  }
-
+  async init() { await this.responseRuntime.init(); return this; }
   respond(input, options = {}) { return this.responseRuntime.respond(input, options); }
   process(input) { return this.memoryRuntime.process(input); }
   addSemanticFact(fact, policy = {}) { return this.memoryRuntime.addSemanticFact(fact, policy); }
+  addTemporalState(record) { return this.memoryRuntime.addTemporalState(record); }
+  resolveTemporalState(subject, stateType, at) { return this.memoryRuntime.resolveTemporalState(subject, stateType, at); }
   queryMemory(query = {}) { return this.memoryRuntime.queryMemory(query); }
 
   getState() {
@@ -47,6 +45,7 @@ export function createLocalCognitiveSystem(options = {}) {
     stores: {
       events: options.eventStore ?? new JsonlStore(join(dataDir, 'events.jsonl')),
       semantic: options.semanticLogStore ?? new JsonlStore(join(dataDir, 'semantic-mutations.jsonl')),
+      temporal: options.temporalLogStore ?? new JsonlStore(join(dataDir, 'temporal-mutations.jsonl')),
       snapshots: options.snapshotStore ?? new JsonlStore(join(dataDir, 'snapshots.jsonl')),
       traces: options.traceStore ?? new JsonlStore(join(dataDir, 'traces.jsonl'))
     }
@@ -59,6 +58,7 @@ export function createInMemoryCognitiveSystem(options = {}) {
     stores: {
       events: options.eventStore ?? new MemoryStore(options.eventSeed ?? []),
       semantic: options.semanticLogStore ?? new MemoryStore(options.semanticMutationSeed ?? []),
+      temporal: options.temporalLogStore ?? new MemoryStore(options.temporalMutationSeed ?? []),
       snapshots: options.snapshotStore ?? new MemoryStore(options.snapshotSeed ?? []),
       traces: options.traceStore ?? new MemoryStore(options.traceSeed ?? [])
     }
@@ -73,8 +73,10 @@ function createCognitiveSystem(options) {
   const memoryRuntime = options.memoryRuntime ?? new MemoryRuntime({
     eventStore: stores.events,
     semanticLogStore: stores.semantic,
+    temporalLogStore: stores.temporal,
     snapshotStore: stores.snapshots,
     semanticSeed: options.semanticSeed ?? [],
+    temporalSeed: options.temporalSeed ?? [],
     vectorScorer: options.vectorScorer ?? null,
     clock: options.clock
   });
@@ -88,14 +90,7 @@ function createCognitiveSystem(options) {
     traceSink: stores.traces,
     maxRepairAttempts: options.maxRepairAttempts ?? 1
   });
-  const system = new CognitiveSystem({
-    memoryRuntime,
-    responseRuntime,
-    stores,
-    identityCore,
-    relationshipRegistry,
-    procedureStore
-  });
+  const system = new CognitiveSystem({ memoryRuntime, responseRuntime, stores, identityCore, relationshipRegistry, procedureStore });
   system.api = createRuntimeApi(memoryRuntime, { responseRuntime, traceStore: stores.traces });
   return system;
 }
