@@ -1,6 +1,7 @@
 export function createRuntimeApi(runtime, options = {}) {
   if (!runtime) throw new TypeError('runtime is required');
   const responseRuntime = options.responseRuntime ?? null;
+  const traceStore = options.traceStore ?? null;
 
   return async function handle(request) {
     const method = request.method ?? 'GET';
@@ -14,7 +15,16 @@ export function createRuntimeApi(runtime, options = {}) {
       if (method === 'POST' && path === '/v1/respond') {
         if (!responseRuntime) return response(503, { error: 'response_runtime_not_configured' });
         const result = await responseRuntime.respond(body.input ?? body, {
+          runId: body.runId,
           privacyContext: body.privacyContext,
+          personIds: body.personIds,
+          contextTags: body.contextTags,
+          relationshipMode: body.relationshipMode,
+          includeSensitiveRelationships: body.includeSensitiveRelationships,
+          allowCandidateIdentity: body.allowCandidateIdentity,
+          identityLimit: body.identityLimit,
+          relationshipLimit: body.relationshipLimit,
+          procedureLimit: body.procedureLimit,
           maxMemoryItems: body.maxMemoryItems,
           maxContextChars: body.maxContextChars
         });
@@ -27,8 +37,15 @@ export function createRuntimeApi(runtime, options = {}) {
         return response(200, await runtime.queryMemory(body));
       }
       if (method === 'POST' && path === '/v1/semantic-facts') {
-        const result = runtime.addSemanticFact(body.fact, body.policy);
+        const result = await runtime.addSemanticFact(body.fact, body.policy);
         return response(result.action === 'conflict_pending' ? 409 : 201, result);
+      }
+      if (method === 'GET' && path === '/v1/traces') {
+        if (!traceStore) return response(503, { error: 'trace_store_not_configured' });
+        const { records, errors } = await traceStore.readAll();
+        if (errors.length) return response(500, { error: 'trace_store_corrupt', details: errors });
+        const limit = Math.max(1, Math.min(100, Number(request.query?.limit ?? 20)));
+        return response(200, { traces: records.slice(-limit).reverse(), count: records.length });
       }
       return response(404, { error: 'not_found', method, path });
     } catch (error) {
