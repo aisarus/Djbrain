@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { JsonlStore } from '../persistence/jsonl-store.js';
+import { MemoryStore } from '../persistence/memory-store.js';
 import { MemoryRuntime } from '../memory-runtime/index.js';
 import { ResponseRuntime } from '../response-runtime/index.js';
 import { createIdentityCore } from '../identity-core/index.js';
@@ -9,15 +10,7 @@ import { createRuntimeApi } from '../runtime-api/index.js';
 import { DeterministicLanguageProvider } from '../language-provider/index.js';
 
 export class CognitiveSystem {
-  constructor({
-    memoryRuntime,
-    responseRuntime,
-    api,
-    stores,
-    identityCore,
-    relationshipRegistry,
-    procedureStore
-  }) {
+  constructor({ memoryRuntime, responseRuntime, api, stores, identityCore, relationshipRegistry, procedureStore }) {
     this.memoryRuntime = memoryRuntime;
     this.responseRuntime = responseRuntime;
     this.api = api;
@@ -32,21 +25,10 @@ export class CognitiveSystem {
     return this;
   }
 
-  respond(input, options = {}) {
-    return this.responseRuntime.respond(input, options);
-  }
-
-  process(input) {
-    return this.memoryRuntime.process(input);
-  }
-
-  addSemanticFact(fact, policy = {}) {
-    return this.memoryRuntime.addSemanticFact(fact, policy);
-  }
-
-  queryMemory(query = {}) {
-    return this.memoryRuntime.queryMemory(query);
-  }
+  respond(input, options = {}) { return this.responseRuntime.respond(input, options); }
+  process(input) { return this.memoryRuntime.process(input); }
+  addSemanticFact(fact, policy = {}) { return this.memoryRuntime.addSemanticFact(fact, policy); }
+  queryMemory(query = {}) { return this.memoryRuntime.queryMemory(query); }
 
   getState() {
     return {
@@ -60,12 +42,31 @@ export class CognitiveSystem {
 
 export function createLocalCognitiveSystem(options = {}) {
   const dataDir = options.dataDir ?? '.djbrain-local/runtime';
-  const stores = {
-    events: options.eventStore ?? new JsonlStore(join(dataDir, 'events.jsonl')),
-    semantic: options.semanticLogStore ?? new JsonlStore(join(dataDir, 'semantic-mutations.jsonl')),
-    snapshots: options.snapshotStore ?? new JsonlStore(join(dataDir, 'snapshots.jsonl')),
-    traces: options.traceStore ?? new JsonlStore(join(dataDir, 'traces.jsonl'))
-  };
+  return createCognitiveSystem({
+    ...options,
+    stores: {
+      events: options.eventStore ?? new JsonlStore(join(dataDir, 'events.jsonl')),
+      semantic: options.semanticLogStore ?? new JsonlStore(join(dataDir, 'semantic-mutations.jsonl')),
+      snapshots: options.snapshotStore ?? new JsonlStore(join(dataDir, 'snapshots.jsonl')),
+      traces: options.traceStore ?? new JsonlStore(join(dataDir, 'traces.jsonl'))
+    }
+  });
+}
+
+export function createInMemoryCognitiveSystem(options = {}) {
+  return createCognitiveSystem({
+    ...options,
+    stores: {
+      events: options.eventStore ?? new MemoryStore(options.eventSeed ?? []),
+      semantic: options.semanticLogStore ?? new MemoryStore(options.semanticMutationSeed ?? []),
+      snapshots: options.snapshotStore ?? new MemoryStore(options.snapshotSeed ?? []),
+      traces: options.traceStore ?? new MemoryStore(options.traceSeed ?? [])
+    }
+  });
+}
+
+function createCognitiveSystem(options) {
+  const stores = options.stores;
   const identityCore = options.identityCore ?? createIdentityCore(options.identitySeed ?? []);
   const relationshipRegistry = options.relationshipRegistry ?? createRelationshipRegistry(options.relationshipSeed ?? []);
   const procedureStore = options.procedureStore ?? createProcedureStore(options.procedureSeed ?? []);
