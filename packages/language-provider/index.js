@@ -6,30 +6,33 @@ export class LanguageProvider {
 
 export class DeterministicLanguageProvider extends LanguageProvider {
   async generate(context) {
-    const { event, strategy, memories } = context;
-    const memoryClause = memories.length
-      ? `I used ${memories.length} relevant memory item${memories.length === 1 ? '' : 's'}.`
-      : 'No long-term memory was required.';
-    const text = render(strategy.move, event.text, memoryClause);
+    const { event, strategy } = context;
+    const text = render(strategy.move, event.text);
     return {
       provider: 'deterministic-test-provider',
       model: 'none',
       text,
-      usage: { inputChars: JSON.stringify(context).length, outputChars: text.length },
+      usage: {
+        inputChars: JSON.stringify(context).length,
+        outputChars: text.length,
+        selectedMemoryItems: context.memories.length
+      },
       raw: null
     };
   }
 
-  async repair({ context, generation, critic }) {
-    const suffix = critic?.reasons?.length
-      ? ` Repair constraints: ${critic.reasons.join(', ')}.`
-      : ' Repair applied.';
-    const text = `${generation.text}${suffix}`;
+  async repair({ context, critic }) {
+    const instruction = critic?.repairInstructions?.[0] ?? 'Produce a compliant answer.';
+    const text = `${render(context.strategy.move, context.event.text)} ${instruction}`;
     return {
       provider: 'deterministic-test-provider',
       model: 'none',
       text,
-      usage: { inputChars: JSON.stringify(context).length, outputChars: text.length },
+      usage: {
+        inputChars: JSON.stringify(context).length,
+        outputChars: text.length,
+        selectedMemoryItems: context.memories.length
+      },
       raw: null
     };
   }
@@ -44,7 +47,7 @@ export function validateGenerationResult(result) {
   return { valid: errors.length === 0, errors };
 }
 
-function render(move, input, memoryClause) {
+function render(move, input) {
   const prefixes = {
     acknowledge_repair_and_act: 'Correction accepted. I will repair the behavior and continue.',
     integrate_feedback: 'Feedback registered and converted into a reversible update proposal.',
@@ -54,5 +57,5 @@ function render(move, input, memoryClause) {
     advance_active_goal: 'Continuing the active goal.',
     contextual_response: 'Responding in the current context.'
   };
-  return `${prefixes[move] ?? prefixes.contextual_response} ${memoryClause} Input: ${input}`;
+  return `${prefixes[move] ?? prefixes.contextual_response} Input: ${input}`;
 }
