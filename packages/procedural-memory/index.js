@@ -3,7 +3,7 @@ export function createProcedure(input) {
     throw new TypeError('id, trigger and non-empty steps are required');
   }
   return {
-    schemaVersion: '1.1.0',
+    schemaVersion: '1.2.0',
     id: input.id,
     trigger: String(input.trigger).trim(),
     contextTags: unique(input.contextTags ?? []),
@@ -24,7 +24,7 @@ export function createProcedure(input) {
 }
 
 export function createProcedureStore(seed = []) {
-  return { schemaVersion: '1.1.0', procedures: seed.map(createProcedure) };
+  return { schemaVersion: '1.2.0', procedures: seed.map(createProcedure) };
 }
 
 export function recordProcedureOutcome(store, id, { success, episodeId }) {
@@ -44,10 +44,7 @@ export function retrieveProcedures(store, query = {}) {
   const tags = query.contextTags ?? [];
   const trigger = normalize(query.trigger ?? '');
   return store.procedures
-    .map((procedure) => ({
-      procedure,
-      score: scoreProcedure(procedure, trigger, tags)
-    }))
+    .map((procedure) => ({ procedure, score: scoreProcedure(procedure, trigger, tags) }))
     .filter(({ score }) => score >= (query.minScore ?? 0.12))
     .sort((a, b) => b.score - a.score)
     .slice(0, query.limit ?? 3);
@@ -59,10 +56,14 @@ function scoreProcedure(procedure, normalizedQuery, tags) {
     normalizedQuery.includes(normalizedTrigger) || normalizedTrigger.includes(normalizedQuery)
   ) ? 1 : 0;
   const tokenScore = tokenOverlap(normalizedTrigger, normalizedQuery);
+  const tagOverlap = tags.length ? intersection(procedure.contextTags, tags) / tags.length : 0;
+  const relevance = Math.max(direct, tokenScore, tagOverlap);
+  if (relevance === 0) return 0;
+
   const triggerScore = Math.max(direct, tokenScore) * 0.5;
-  const tagScore = tags.length ? intersection(procedure.contextTags, tags) / tags.length * 0.25 : 0;
-  const confidenceScore = procedure.confidence * 0.2;
-  const verificationBonus = procedure.status === 'verified' ? 0.05 : 0;
+  const tagScore = tagOverlap * 0.25;
+  const confidenceScore = procedure.confidence * 0.2 * relevance;
+  const verificationBonus = procedure.status === 'verified' ? 0.05 * relevance : 0;
   return Number((triggerScore + tagScore + confidenceScore + verificationBonus).toFixed(4));
 }
 
