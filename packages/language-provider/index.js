@@ -10,11 +10,26 @@ export class DeterministicLanguageProvider extends LanguageProvider {
     const memoryClause = memories.length
       ? `I used ${memories.length} relevant memory item${memories.length === 1 ? '' : 's'}.`
       : 'No long-term memory was required.';
+    const text = render(strategy.move, event.text, memoryClause);
     return {
       provider: 'deterministic-test-provider',
       model: 'none',
-      text: render(strategy.move, event.text, memoryClause),
-      usage: { inputChars: JSON.stringify(context).length, outputChars: 0 },
+      text,
+      usage: { inputChars: JSON.stringify(context).length, outputChars: text.length },
+      raw: null
+    };
+  }
+
+  async repair({ context, generation, critic }) {
+    const suffix = critic?.reasons?.length
+      ? ` Repair constraints: ${critic.reasons.join(', ')}.`
+      : ' Repair applied.';
+    const text = `${generation.text}${suffix}`;
+    return {
+      provider: 'deterministic-test-provider',
+      model: 'none',
+      text,
+      usage: { inputChars: JSON.stringify(context).length, outputChars: text.length },
       raw: null
     };
   }
@@ -25,6 +40,7 @@ export function validateGenerationResult(result) {
   if (!result?.provider) errors.push('missing_provider');
   if (typeof result?.text !== 'string' || result.text.length === 0) errors.push('missing_text');
   if (!result?.usage || typeof result.usage.inputChars !== 'number') errors.push('invalid_usage');
+  if (result?.usage && typeof result.usage.outputChars !== 'number') errors.push('invalid_output_usage');
   return { valid: errors.length === 0, errors };
 }
 
