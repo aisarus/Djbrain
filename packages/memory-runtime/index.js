@@ -5,12 +5,14 @@ import { routeMemory } from '../memory-router/index.js';
 import { scoreSalience } from '../salience/index.js';
 import { createEpisodeStore, writeEventToEpisodeStore, retrieveEpisodes } from '../episodic-memory/index.js';
 import { createSemanticFact, createSemanticStore, upsertSemanticFact, querySemanticFacts } from '../semantic-memory/index.js';
+import { hybridRetrieve } from '../hybrid-retrieval/index.js';
 
 export class MemoryRuntime {
   constructor({
     eventStore,
     snapshotStore = null,
     semanticLogStore = null,
+    vectorScorer = null,
     clock = () => new Date().toISOString(),
     semanticSeed = []
   } = {}) {
@@ -18,6 +20,7 @@ export class MemoryRuntime {
     this.eventStore = eventStore;
     this.snapshotStore = snapshotStore;
     this.semanticLogStore = semanticLogStore;
+    this.vectorScorer = vectorScorer;
     this.clock = clock;
     this.semanticSeed = structuredClone(semanticSeed);
     this.workingMemory = createWorkingMemory();
@@ -74,6 +77,9 @@ export class MemoryRuntime {
 
     await this.eventStore.append(envelope);
     this.#replay(envelope);
+    const retrieval = memoryDecision.memoryNeeded
+      ? await this.#retrieveForEvent(event, memoryDecision)
+      : { episodes: [], facts: [], ranked: [] };
     await this.#writeSnapshot();
 
     return {
@@ -82,12 +88,9 @@ export class MemoryRuntime {
       situation,
       memoryDecision,
       salience,
-      retrievedEpisodes: memoryDecision.memoryNeeded
-        ? retrieveEpisodes(this.episodeStore, { entities: event.entities, limit: memoryDecision.budget || 5, now: event.timestamp })
-        : [],
-      retrievedFacts: memoryDecision.memoryNeeded
-        ? querySemanticFacts(this.semanticStore, { limit: memoryDecision.budget || 5 })
-        : [],
+      retrievedEpisodes: retrieval.episodes,
+      retrievedFacts: retrieval.facts,
+      retrievalTrace: retrieval.ranked.map(({ id, score, components, memory }) => ({ id, layer: memory.layer, score, components })),
       state: this.getState()
     };
   }
@@ -119,7 +122,7 @@ export class MemoryRuntime {
 
   getState() {
     return {
-      schemaVersion: '1.2.0',
+      schemaVersion: '1.3.0',
       workingMemory: structuredClone(this.workingMemory),
       episodes: structuredClone(this.episodeStore.episodes),
       semanticFacts: structuredClone(this.semanticStore.facts),
@@ -127,6 +130,34 @@ export class MemoryRuntime {
       semanticFactCount: this.semanticStore.facts.length,
       eventCount: this.seenEventIds.size,
       semanticMutationCount: this.seenSemanticMutationIds.size
+    };
+  }
+
+  async #retrieveForEvent(event, memoryDecision) {
+    const memories = [
+      ...this.episodeStore.episodes.map((episode) => ({ ...episode, layer: 'episodic_memory' })),
+      ...this.semanticStore.facts.map((fact) => ({ ...fact, layer: 'semantic_memory' }))
+    ];
+    const ranked = await hybridRetrieve({
+      query: {
+        text: event.text,
+        entities: event.entities,
+        topics: inferQueryTopics(event, memoryDecision)
+      },
+      memories,
+      vectorScorer: this.vectorScorer,
+      limit: memoryDecision.budget || 5,
+      now: event.timestamp,
+      minRelevance: 0.05
+    });
+    return {
+      ranked,
+      episodes: ranked
+        .filter((item) => item.memory.layer === 'episodic_memory')
+        .map((item) => ({ episode: item.memory, score: item.score, components: item.components })),
+      facts: ranked
+        .filter((item) => item.memory.layer === 'semantic_memory')
+        .map((item) => ({ fact: item.memory, score: item.score, components: item.components }))
     };
   }
 
@@ -154,11 +185,21 @@ export class MemoryRuntime {
     if (!this.snapshotStore) return;
     await this.snapshotStore.append({
       id: `runtime_state_${this.workingMemory.version}_${this.seenSemanticMutationIds.size}`,
-      schemaVersion: '1.2.0',
+      schemaVersion: '1.3.0',
       timestamp: this.clock(),
       state: this.getState()
     });
   }
+}
+
+function inferQueryTopics(event, decision) {
+  const topics = [];
+  if (decision.category === 'project') topics.push('djbrain_backend','project');
+  if (decision.category === 'correction') topics.push('behavior_correction','feedback');
+  if (decision.category === 'feedback') topics.push('feedback');
+  if (decision.category === 'relationship') topics.push('relationship');
+  if (event.entities.includes('data_pipeline')) topics.push('cognitive_data');
+  return topics;
 }
 
 function sanitizePolicy(policy) {
